@@ -26,31 +26,30 @@ class Data(BaseModel):
     hours_per_week: int = Field(..., example=40, alias="hours-per-week")
     native_country: str = Field(..., example="United-States", alias="native-country")
 
-path = None # TODO: enter the path for the saved encoder 
-encoder = load_model(path)
+# Paths for saved encoder and model
+encoder_path = "/home/drob946/Deploying-a-Scalable-ML-Pipeline-with-FastAPI/model/encoder.pkl"
+model_path = "/home/drob946/Deploying-a-Scalable-ML-Pipeline-with-FastAPI/model/model.pkl"
 
-path = None # TODO: enter the path for the saved model 
-model = load_model(path)
+# Load encoder and model
+encoder = load_model(encoder_path)
+model = load_model(model_path)
 
-# TODO: create a RESTful API using FastAPI
-app = None # your code here
+# Create FastAPI app
+app = FastAPI()
 
-# TODO: create a GET on the root giving a welcome message
+# Create a GET on the root giving a welcome message
 @app.get("/")
 async def get_root():
     """ Say hello!"""
-    # your code here
-    pass
+    return {"message": "Welcome to the Income Prediction API!"}
 
-
-# TODO: create a POST on a different path that does model inference
+# Create a POST on a different path that does model inference
 @app.post("/data/")
 async def post_inference(data: Data):
     # DO NOT MODIFY: turn the Pydantic model into a dict.
     data_dict = data.dict()
+
     # DO NOT MODIFY: clean up the dict to turn it into a Pandas DataFrame.
-    # The data has names with hyphens and Python does not allow those as variable names.
-    # Here it uses the functionality of FastAPI/Pydantic/etc to deal with this.
     data = {k.replace("_", "-"): [v] for k, v in data_dict.items()}
     data = pd.DataFrame.from_dict(data)
 
@@ -64,11 +63,18 @@ async def post_inference(data: Data):
         "sex",
         "native-country",
     ]
+
+    # Process data
     data_processed, _, _, _ = process_data(
-        # your code here
-        # use data as data input
-        # use training = False
-        # do not need to pass lb as input
+        data,
+        categorical_features=cat_features,
+        label=None,
+        training=False,
+        encoder=encoder
     )
-    _inference = None # your code here to predict the result using data_processed
+
+    # Make predictions
+    _inference = inference(model, data_processed)
+
+    # Return result
     return {"result": apply_label(_inference)}
